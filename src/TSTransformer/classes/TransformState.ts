@@ -200,6 +200,26 @@ export class TransformState {
 	 * Returns a `luau.VariableDeclaration` for RuntimeLib.lua
 	 */
 	public createRuntimeLibImport(sourceFile: ts.SourceFile) {
+		if (this.projectType === ProjectType.Standalone) {
+			const sourceOutPath = this.pathTranslator.getOutputPath(sourceFile.fileName);
+			const sourceOutDir = path.dirname(sourceOutPath);
+			const ext = this.compilerOptions.luau ? ".luau" : ".lua";
+			const runtimeLibPath = path.join(this.data.projectOptions.includePath, "RuntimeLib" + ext);
+			let relativePath = path.relative(sourceOutDir, runtimeLibPath);
+			relativePath = relativePath.split(path.sep).join("/");
+			if (!relativePath.startsWith(".") && !relativePath.startsWith("/")) {
+				relativePath = "./" + relativePath;
+			}
+			if (relativePath.endsWith(ext)) {
+				relativePath = relativePath.slice(0, -ext.length);
+			}
+
+			return luau.create(luau.SyntaxKind.VariableDeclaration, {
+				left: luau.globals.TS,
+				right: luau.call(luau.globals.require, [luau.string(relativePath)]),
+			});
+		}
+
 		// if the transform state has the game path to the RuntimeLib.lua
 		if (this.runtimeLibRbxPath) {
 			if (this.projectType === ProjectType.Game) {

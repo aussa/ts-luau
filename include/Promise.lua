@@ -2,6 +2,18 @@
 	An implementation of Promises similar to Promise/A+.
 ]]
 
+local task = task or {}
+if not task.spawn then
+	task.spawn = function(f, ...)
+		local co = coroutine.create(f)
+		local ok, err = coroutine.resume(co, ...)
+		if not ok then
+			error(err, 0)
+		end
+		return co
+	end
+end
+
 local ERROR_NON_PROMISE_IN_LIST = "Non-promise value passed into %s at index %s"
 local ERROR_NON_LIST = "Please pass a list of promises to %s"
 local ERROR_NON_FUNCTION = "Please pass a handler function to %s!"
@@ -217,11 +229,32 @@ end
 	@class Promise
 	@__index prototype
 ]=]
+local _timeEvent
+if game and typeof(game) == "Instance" then
+	_timeEvent = game:GetService("RunService").Heartbeat
+else
+	_timeEvent = {
+		Connect = function(self, callback)
+			local active = true
+			task.spawn(function()
+				if active then
+					callback()
+				end
+			end)
+			return {
+				Disconnect = function()
+					active = false
+				end
+			}
+		end
+	}
+end
+
 local Promise = {
 	Error = Error,
 	Status = makeEnum("Promise.Status", { "Started", "Resolved", "Rejected", "Cancelled" }),
 	_getTime = os.clock,
-	_timeEvent = game:GetService("RunService").Heartbeat,
+	_timeEvent = _timeEvent,
 	_unhandledRejectionCallbacks = {},
 }
 Promise.prototype = {}

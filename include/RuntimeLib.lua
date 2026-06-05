@@ -1,6 +1,11 @@
-local Promise = require(script.Parent.Promise)
+local Promise
+if script then
+	Promise = require(script.Parent.Promise)
+else
+	Promise = require("./Promise")
+end
 
-local RunService = game:GetService("RunService")
+local RunService = game and game:GetService("RunService") or nil
 
 local OUTPUT_PREFIX = "roblox-ts: "
 local NODE_MODULES = "node_modules"
@@ -11,7 +16,7 @@ local TS = {}
 TS.Promise = Promise
 
 local function isPlugin(context)
-	return RunService:IsStudio() and context:FindFirstAncestorWhichIsA("Plugin") ~= nil
+	return RunService and RunService:IsStudio() and context:FindFirstAncestorWhichIsA("Plugin") ~= nil
 end
 
 function TS.getModule(context, scope, moduleName)
@@ -22,7 +27,7 @@ function TS.getModule(context, scope, moduleName)
 	end
 
 	-- ensure modules have fully replicated
-	if RunService:IsRunning() and RunService:IsClient() and not isPlugin(context) and not game:IsLoaded() then
+	if RunService and RunService:IsRunning() and RunService:IsClient() and not isPlugin(context) and not game:IsLoaded() then
 		game.Loaded:Wait()
 	end
 

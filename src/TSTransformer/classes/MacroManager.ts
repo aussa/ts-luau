@@ -71,10 +71,25 @@ function getFirstDeclarationOrThrow<T extends ts.Node>(symbol: ts.Symbol, check:
 	throw new ProjectError("");
 }
 
-function getGlobalSymbolByNameOrThrow(typeChecker: ts.TypeChecker, name: string, meaning: ts.SymbolFlags) {
+const ROBLOX_ONLY_SYMBOLS = new Set<string>([
+	"CFrame",
+	"UDim",
+	"UDim2",
+	"Vector2",
+	"Vector2int16",
+	"Vector3",
+	"Vector3int16",
+	"ReadVoxelsArray",
+	"SharedTable",
+]);
+
+function getGlobalSymbolByName(typeChecker: ts.TypeChecker, name: string, meaning: ts.SymbolFlags) {
 	const symbol = typeChecker.resolveName(name, undefined, meaning, false);
 	if (symbol) {
 		return symbol;
+	}
+	if (ROBLOX_ONLY_SYMBOLS.has(name)) {
+		return undefined;
 	}
 	throw new ProjectError(`MacroManager could not find symbol for ${name}` + TYPES_NOTICE);
 }
@@ -101,24 +116,31 @@ export class MacroManager {
 
 	constructor(typeChecker: ts.TypeChecker) {
 		for (const [name, macro] of Object.entries(IDENTIFIER_MACROS)) {
-			const symbol = getGlobalSymbolByNameOrThrow(typeChecker, name, ts.SymbolFlags.Variable);
-			this.identifierMacros.set(symbol, macro);
+			const symbol = getGlobalSymbolByName(typeChecker, name, ts.SymbolFlags.Variable);
+			if (symbol) {
+				this.identifierMacros.set(symbol, macro);
+			}
 		}
 
 		for (const [name, macro] of Object.entries(CALL_MACROS)) {
-			const symbol = getGlobalSymbolByNameOrThrow(typeChecker, name, ts.SymbolFlags.Function);
-			this.callMacros.set(symbol, macro);
+			const symbol = getGlobalSymbolByName(typeChecker, name, ts.SymbolFlags.Function);
+			if (symbol) {
+				this.callMacros.set(symbol, macro);
+			}
 		}
 
 		for (const [className, macro] of Object.entries(CONSTRUCTOR_MACROS)) {
-			const symbol = getGlobalSymbolByNameOrThrow(typeChecker, className, ts.SymbolFlags.Interface);
-			const interfaceDec = getFirstDeclarationOrThrow(symbol, ts.isInterfaceDeclaration);
-			const constructSymbol = getConstructorSymbol(interfaceDec);
-			this.constructorMacros.set(constructSymbol, macro);
+			const symbol = getGlobalSymbolByName(typeChecker, className, ts.SymbolFlags.Interface);
+			if (symbol) {
+				const interfaceDec = getFirstDeclarationOrThrow(symbol, ts.isInterfaceDeclaration);
+				const constructSymbol = getConstructorSymbol(interfaceDec);
+				this.constructorMacros.set(constructSymbol, macro);
+			}
 		}
 
 		for (const [className, methods] of Object.entries(PROPERTY_CALL_MACROS)) {
-			const symbol = getGlobalSymbolByNameOrThrow(typeChecker, className, ts.SymbolFlags.Interface);
+			const symbol = getGlobalSymbolByName(typeChecker, className, ts.SymbolFlags.Interface);
+			if (!symbol) continue;
 
 			const methodMap = new Map<string, ts.Symbol>();
 			for (const declaration of symbol.declarations ?? []) {
@@ -148,6 +170,8 @@ export class MacroManager {
 			const symbol = typeChecker.resolveName(symbolName, undefined, ts.SymbolFlags.All, false);
 			if (symbol) {
 				this.symbols.set(symbolName, symbol);
+			} else if (ROBLOX_ONLY_SYMBOLS.has(symbolName)) {
+				// Skip Roblox-only symbol in standalone mode
 			} else {
 				throw new ProjectError(`MacroManager could not find symbol for ${symbolName}` + TYPES_NOTICE);
 			}

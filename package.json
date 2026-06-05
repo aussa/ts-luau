@@ -1,14 +1,14 @@
 {
-	"name": "roblox-ts",
+	"name": "ts-luau",
 	"version": "3.0.0",
-	"description": "A TypeScript-to-Luau Compiler for Roblox",
+	"description": "A TypeScript-to-Luau Compiler",
 	"main": "out/CLI/index.js",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/roblox-ts/roblox-ts.git"
+		"url": "git+https://github.com/aussa/ts-luau.git"
 	},
 	"bin": {
-		"rbxtsc": "out/CLI/cli.js"
+		"tsluau": "out/CLI/cli.js"
 	},
 	"scripts": {
 		"prepublishOnly": "npm run build",
@@ -16,13 +16,8 @@
 		"build-watch": "tspc -b -w",
 		"eslint": "eslint --flag unstable_ts_config --max-warnings 0",
 		"devlink": "npm run build && cd devlink && npm link",
-		"update-test-types": "cd tests && npm install github:roblox-ts/compiler-types @rbxts/types@latest && npm install",
-		"test": "npm run build && npm run test-compile && npm run test-rojo && npm run test-run",
-		"test-compile": "jest --coverage --runInBand",
-		"test-rojo": "rojo build tests -o ./tests/test.rbxl",
-		"test-run": "lune run ./tests/runTestsWithLune.lua ./tests/test.rbxl",
-		"test-roblox": "npm run build && npm run test-compile && npm run test-rojo && npm run run-in-roblox",
-		"run-in-roblox": "run-in-roblox --place ./tests/test.rbxl --script ./tests/out/main.server.lua"
+		"test": "npm run build && npm run test-compile",
+		"test-compile": "jest --coverage --runInBand"
 	},
 	"author": "",
 	"license": "MIT",

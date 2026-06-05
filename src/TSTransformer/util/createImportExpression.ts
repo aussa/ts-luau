@@ -214,6 +214,39 @@ export function createImportExpression(
 	sourceFile: ts.SourceFile,
 	moduleSpecifier: ts.Expression,
 ): luau.IndexableExpression {
+	if (state.projectType === ProjectType.Standalone) {
+		const moduleFile = getSourceFileFromModuleSpecifier(state, moduleSpecifier);
+		if (!moduleFile) {
+			DiagnosticService.addDiagnostic(errors.noModuleSpecifierFile(moduleSpecifier));
+			return luau.none();
+		}
+
+		const virtualPath = state.guessVirtualPath(moduleFile.fileName) || moduleFile.fileName;
+		let moduleOutPath: string;
+		if (ts.isInsideNodeModules(virtualPath)) {
+			moduleOutPath = state.pathTranslator.getImportPath(
+				state.nodeModulesPathMapping.get(getCanonicalFileName(path.normalize(virtualPath))) ?? virtualPath,
+				/* isNodeModule */ true,
+			);
+		} else {
+			moduleOutPath = state.pathTranslator.getImportPath(virtualPath);
+		}
+
+		const sourceOutPath = state.pathTranslator.getOutputPath(sourceFile.fileName);
+		const sourceOutDir = path.dirname(sourceOutPath);
+		let relativePath = path.relative(sourceOutDir, moduleOutPath);
+		relativePath = relativePath.split(path.sep).join("/");
+		if (!relativePath.startsWith(".") && !relativePath.startsWith("/")) {
+			relativePath = "./" + relativePath;
+		}
+		const ext = path.extname(relativePath);
+		if (ext === ".lua" || ext === ".luau") {
+			relativePath = relativePath.slice(0, -ext.length);
+		}
+
+		return luau.call(luau.globals.require, [luau.string(relativePath)]);
+	}
+
 	const parts = getImportParts(state, sourceFile, moduleSpecifier);
 	parts.unshift(luau.globals.script);
 	return luau.call(state.TS(moduleSpecifier.parent, "import"), parts);

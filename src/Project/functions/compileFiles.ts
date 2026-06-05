@@ -74,17 +74,18 @@ export function compileFiles(
 		}
 	}
 
-	const pkgRojoResolvers = compilerOptions.typeRoots!.map(RojoResolver.synthetic);
-	const nodeModulesPathMapping = createNodeModulesPathMapping(compilerOptions.typeRoots!);
+	const typeRoots = compilerOptions.typeRoots ?? [];
+	const pkgRojoResolvers = typeRoots.map(RojoResolver.synthetic);
+	const nodeModulesPathMapping = createNodeModulesPathMapping(typeRoots);
 
 	const projectType = data.projectOptions.type ?? inferProjectType(data, rojoResolver);
 
-	if (projectType !== ProjectType.Package && data.rojoConfigPath === undefined) {
-		return emitResultFailure("Non-package projects must have a Rojo project file!");
+	if (projectType !== ProjectType.Package && projectType !== ProjectType.Standalone && data.rojoConfigPath === undefined) {
+		return emitResultFailure("Non-package/non-standalone projects must have a Rojo project file!");
 	}
 
 	let runtimeLibRbxPath: RbxPath | undefined;
-	if (projectType !== ProjectType.Package) {
+	if (projectType !== ProjectType.Package && projectType !== ProjectType.Standalone) {
 		runtimeLibRbxPath = rojoResolver.getRbxPathFromFilePath(
 			path.join(data.projectOptions.includePath, "RuntimeLib.lua"),
 		);

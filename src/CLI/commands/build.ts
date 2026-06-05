@@ -96,7 +96,7 @@ export = ts.identity<yargs.CommandModule<object, BuildFlags & Partial<ProjectOpt
 				hidden: true,
 			})
 			.option("type", {
-				choices: [ProjectType.Game, ProjectType.Model, ProjectType.Package] as const,
+				choices: [ProjectType.Game, ProjectType.Model, ProjectType.Package, ProjectType.Standalone] as const,
 				describe: "override project type",
 			})
 			.option("includePath", {
@@ -157,6 +157,7 @@ export = ts.identity<yargs.CommandModule<object, BuildFlags & Partial<ProjectOpt
 			}
 		} catch (e) {
 			process.exitCode = 1;
+			console.error("Caught build error:", e);
 			if (e instanceof LoggableError) {
 				e.log();
 				debugger;

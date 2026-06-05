@@ -1,6 +1,6 @@
 import luau from "@roblox-ts/luau-ast";
 import { RbxType } from "@roblox-ts/rojo-resolver";
-import { COMPILER_VERSION } from "Shared/constants";
+import { COMPILER_VERSION, ProjectType } from "Shared/constants";
 import { assert } from "Shared/util/assert";
 import { TransformState } from "TSTransformer";
 import { transformIdentifierDefined } from "TSTransformer/nodes/expressions/transformIdentifier";
@@ -214,7 +214,10 @@ export function transformSourceFile(state: TransformState, node: ts.SourceFile) 
 	const lastStatement = getLastNonCommentStatement(statements.tail);
 	if (!lastStatement || !luau.isReturnStatement(lastStatement.value)) {
 		const outputPath = state.pathTranslator.getOutputPath(node.fileName);
-		if (state.rojoResolver.getRbxTypeFromFilePath(outputPath) === RbxType.ModuleScript) {
+		if (
+			state.projectType === ProjectType.Standalone ||
+			state.rojoResolver.getRbxTypeFromFilePath(outputPath) === RbxType.ModuleScript
+		) {
 			luau.list.push(statements, luau.create(luau.SyntaxKind.ReturnStatement, { expression: luau.nil() }));
 		}
 	}
@@ -222,7 +225,7 @@ export function transformSourceFile(state: TransformState, node: ts.SourceFile) 
 	const headerStatements = luau.list.make<luau.Statement>();
 
 	// add build information to the tree
-	luau.list.push(headerStatements, luau.comment(` Compiled with roblox-ts v${COMPILER_VERSION}`));
+	luau.list.push(headerStatements, luau.comment(` Compiled with ts-luau v${COMPILER_VERSION}`));
 
 	// add the Runtime library to the tree if it is used
 	if (state.usesRuntimeLib) {
