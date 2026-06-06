@@ -214,6 +214,21 @@ export function createImportExpression(
 	sourceFile: ts.SourceFile,
 	moduleSpecifier: ts.Expression,
 ): luau.IndexableExpression {
+	const symbol =
+		state.typeChecker.getSymbolAtLocation(moduleSpecifier) ??
+		state.typeChecker.resolveExternalModuleName(moduleSpecifier);
+	if (symbol && ts.isStringLiteralLike(moduleSpecifier)) {
+		const declaration = symbol.valueDeclaration ?? symbol.declarations?.[0];
+		if (declaration && ts.isModuleDeclaration(declaration)) {
+			const sourceFile = moduleSpecifier.getSourceFile();
+			const mode = state.program.getModeForUsageLocation(sourceFile, moduleSpecifier);
+			const resolvedModuleInfo = state.program.getResolvedModule(sourceFile, moduleSpecifier.text, mode);
+			if (!resolvedModuleInfo || !resolvedModuleInfo.resolvedModule) {
+				return luau.call(luau.globals.require, [luau.string(moduleSpecifier.text)]);
+			}
+		}
+	}
+
 	if (state.projectType === ProjectType.Standalone) {
 		const moduleFile = getSourceFileFromModuleSpecifier(state, moduleSpecifier);
 		if (!moduleFile) {
