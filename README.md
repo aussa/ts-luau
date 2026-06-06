@@ -37,6 +37,7 @@ To compile a TypeScript project using `ts-luau`:
        "noLib": true,
        "strict": true,
        "allowSyntheticDefaultImports": true,
+       "skipLibCheck": true,
        "rootDir": "src",
        "outDir": "out"
      },
@@ -45,6 +46,8 @@ To compile a TypeScript project using `ts-luau`:
      }
    }
    ```
+
+   Add `"typeRoots"` when you install a scoped types package (see [Type definitions](#type-definitions) below).
 
 2. **Project Directory Structure**:
    Place all your `.ts` source files inside the directory specified by `"rootDir"` (usually `src`).
@@ -80,6 +83,20 @@ To compile a TypeScript project using `ts-luau`:
    └── out/
        └── mod.luau  <-- Your compiled Luau code is saved here!
    ```
+
+## Type definitions
+
+`ts-luau` sets `noLib: true`, so you supply your own declarations (Luau stdlib, game APIs, runtime modules). Install a scoped types package and add **its npm scope** to `typeRoots`:
+
+```json
+{
+  "compilerOptions": {
+    "typeRoots": ["node_modules/@your-scope"]
+  }
+}
+```
+
+The scope must match the installed package: `@your-scope/types` lives under `node_modules/@your-scope/types/`.
 
 ## Differences from standard JS/TS
 
